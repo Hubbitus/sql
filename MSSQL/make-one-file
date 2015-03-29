@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# Script for convenient deploy futures on objects by concatenate it in one single file
+
+TARGET=single-file-for-deploy.sql
+
+#FILES=( ./Utils/format_interval.fn.sql ./ProgressiveLogging/log_message.sp.sql ./ProgressiveLogging/log.sp.sql ./Benchmarking/bench_exec.sp.sql ./PeriodicJobs/INDEXES_STATS_REBUILD.job.sql )
+FILES=( ./Utils/format_interval.fn.sql ./ProgressiveLogging/log_message.sp.sql ./ProgressiveLogging/log.sp.sql ./Benchmarking/bench_exec.sp.sql )
+#cat ./Benchmarking/sql_benchmark_table.sp.sql >> $TARGET
+#echo 'GO' >> $TARGET
+
+: > "$TARGET"
+
+{
+
+for file in "${FILES[@]}"; do
+	echo "Processing $file" 1>&2
+	echo "-- file [$file]"
+	cat "$file"
+	echo
+	echo 'GO'
+	echo
+	echo "-- /file [$file]"
+done
+
+echo
+echo 'GO'
+echo
+
+} >> "$TARGET"
