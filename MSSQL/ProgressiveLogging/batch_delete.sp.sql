@@ -17,9 +17,11 @@ GO
 CREATE PROCEDURE dbo.batch_delete(@deleteSql NVARCHAR(MAX), @batch INT = 10000)
 AS
 BEGIN
-	--	LEVEL SERIALIZABLE loop delete by 10000 records (10 steps) - wins by benchmarking
+	SET XACT_ABORT ON;
+
+	-- LEVEL SERIALIZABLE loop delete by 10000 records (10 steps) - wins by benchmarking
 	SET TRANSACTION ISOLATION LEVEL SERIALIZABLE
-	BEGIN TRANSACTION
+
 	DECLARE @i INT = 1, @total INT;
 	DECLARE @timeEstimateDiffMilliseconds INT, @timeMilliseconds INT, @timeMillisecondsPrev INT = 0; -- 2 times to estimate end time
 	DECLARE @dateStart DATETIME2 = GETDATE();
@@ -32,9 +34,10 @@ BEGIN
 
 	SET @sql = 'Operation run time: ' + CONVERT(VARCHAR, @dateStart, 121) + '; Rows to delete: ' + CAST(@total as VARCHAR(100)) + ' by ' + CAST(@batch as VARCHAR(100)) + ' at step';
 	RAISERROR(@sql, 0, 1) WITH NOWAIT;
-	  
+
 	-- We can't rely on @@ROWCOUNT because use dinamic SQL
 	WHILE (@i * @batch < @total) BEGIN
+		BEGIN TRANSACTION
 	--	DELETE TOP(@batch) FROM arc_exps_h WHERE channel_id IN(SELECT channel_id FROM channel WHERE orig_id LIKE 'DELETED_%')
 		EXEC dbo.bench_exec @sql = @sqlDel, @timeMilliseconds = @timeMilliseconds OUTPUT;
 		IF (0 = @timeMillisecondsPrev) SET @timeMillisecondsPrev = @timeMilliseconds; -- begin
@@ -44,6 +47,7 @@ BEGIN
 		EXEC dbo.log @msg = @sql, @format = '[${cur_time}, spent: ${date_diff_str}, spent from start: ${date_diff_start_str}, estimate end (by 2 last operations) in: ${date_diff_estimate_str}] ${msg}', @dateStart = @dateStart, @timeLastDiffMillisecondsIn = @timeMilliseconds, @timeEstimateDiffMillisecondsIn = @timeEstimateDiffMilliseconds;
 		SET @i = @i + 1;
 		SET @timeMillisecondsPrev = @timeMilliseconds;
+		COMMIT;
 		WAITFOR DELAY '00:00:00.001';
 	END
 
@@ -51,7 +55,6 @@ BEGIN
 	-- For check!
 	SELECT @total = COUNT(*) FROM arc_exps_h WHERE channel_id IN(SELECT channel_id FROM channel WHERE orig_id LIKE 'DELETED_%');
 	SET @datePrev = GETDATE();
-	ROLLBACK
 
 	EXEC dbo.log @msg = 'End full execution. Also ROLLBACK done', @format = '[${cur_time}, spent: ${date_diff_str}, spent from start: ${date_diff_start_str}] ${msg}', @datePrev = @datePrev, @dateStart = @dateStart;
 END
