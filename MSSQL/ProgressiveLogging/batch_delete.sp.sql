@@ -53,7 +53,7 @@ BEGIN
 		END TRY
 		BEGIN CATCH
 			SET @msg = 'ERROR happened! ErrorNumber: ' + CAST(ERROR_NUMBER() as VARCHAR(1000)) + '; ErrorSeverity: ' + CAST(ERROR_SEVERITY() as VARCHAR(1000)) + 'ErrorState: ' + CAST(ERROR_STATE() as VARCHAR(1000)) + '; ErrorProcedure: ' + ERROR_PROCEDURE() + '; ErrorLine: ' + CAST(ERROR_LINE() as VARCHAR(1000)) + '; ErrorMessage: ' + CAST(ERROR_MESSAGE() as VARCHAR(1000)) + ';';
-			EXEC dbo.log @msg = @sql;
+			EXEC dbo.log @msg = @msg;
 		END CATCH
 
 		WAITFOR DELAY '00:00:00.001';
