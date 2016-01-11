@@ -1,0 +1,21 @@
+#!/bin/bash
+
+FROM_HOST=localhost
+# Absolute path
+FROM_FILE=/root/temp/CopyDatabase/egais_dump-2016-01-11-20_44_44.sql.gz
+TO_HOST=server1
+TO_DB_NAME=egais15support
+
+# gzip incorrectly report uncompressed size for big FROM_FILEs: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=149775
+# So will use compressed
+#SIZE=$( ssh $FROM_HOST "gzip -l $FROM_FILE | tail -1 | sed -r 's/^\s+//g;s/\s{2,}/ /g' | cut -f2 -d' '" )
+#echo UNCOMPRESSED_SIZE=$SIZE
+SIZE=$( ssh $FROM_HOST "stat --format=%s $FROM_FILE" )
+echo COMPRESSED_SIZE=$SIZE
+
+
+time ssh -C -o CompressionLevel=9 $FROM_HOST cat $FROM_FILE \
+	| pv --progress -terabW --size $SIZE \
+	| ssh $TO_HOST "pigz --decompress --stdout \
+		| egrep --text -v 'CREATE SCHEMA public;|DROP SCHEMA IF EXISTS public;|CREATE EXTENSION IF NOT EXISTS pg_hint_plan|SET default_tablespace' \
+		| psql -h localhost -nx -v ON_ERROR_STOP=on -U postgres --dbname $TO_DB_NAME"

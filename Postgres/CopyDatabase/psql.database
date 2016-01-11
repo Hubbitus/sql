@@ -1,0 +1,16 @@
+#!/bin/bash
+
+FROM_HOST=localhost
+FROM_DB_NAME=egais
+TO_HOST=server1
+TO_DB_NAME=egais15support
+
+#set -x
+SIZE=$( ssh $FROM_HOST "cd /; sudo -u postgres psql -qtAw $FROM_DB_NAME -c \"SELECT pg_catalog.pg_database_size(datname) FROM pg_catalog.pg_database WHERE datname = '$FROM_DB_NAME'\"" ) #"
+echo SIZE=$SIZE
+echo 'NOTICE: Please note used size from database it is very roughly estimeated!'
+
+time ssh -C -o CompressionLevel=9 $FROM_HOST sudo -u postgres pg_dump --if-exists --clean --create --format=plain --compress=0 --exclude-table-data='history.logged_actions' $FROM_DB_NAME \
+	| pv --progress -terabW --size $SIZE \
+	| egrep -v 'CREATE SCHEMA public;|CREATE EXTENSION IF NOT EXISTS pg_hint_plan|SET default_tablespace' \
+	| ssh $TO_HOST psql -h localhost -en -x -v ON_ERROR_STOP=on -U postgres --dbname $TO_DB_NAME
