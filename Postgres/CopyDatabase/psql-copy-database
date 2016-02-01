@@ -1,0 +1,23 @@
+#!/bin/bash
+
+set -o pipefail
+set -e
+
+. .config
+
+. _pg_size
+
+: ${FROM_DB_USER?"You must define FROM_DB_USER to continue"}
+: ${FROM_DB_NAME?"You must define FROM_DB_NAME to continue"}
+: ${TO_DB_USER?"You must define TO_DB_USER to continue"}
+: ${TO_DB_NAME?"You must define TO_DB_NAME to continue"}
+
+# Unfortunately there no ternary operator in bash for strings (http://stackoverflow.com/questions/3953645/ternary-operator-in-bash, http://unix.stackexchange.com/questions/126706/bashs-conditional-operator-and-assignment)
+_FROM_CONNECT=$( [ -n "${FROM_HOST}" ] && echo "ssh -C -o CompressionLevel=9 $FROM_HOST" || echo "sh -c" )
+_TO_CONNECT=$( [ -n "${TO_HOST}" ] && echo "ssh -C -o CompressionLevel=9 $TO_HOST" || echo "sh -c" )
+
+set -x
+time $_FROM_CONNECT "sudo -i PWD=/ -u $FROM_DB_USER pg_dump -U $FROM_DB_USER --clean --if-exists --format=plain --compress=0 $FROM_EXTRA_OPTIONS $FROM_DB_NAME" \
+	| pv --progress -terabW --size $SIZE \
+	| grep -Pv "^(DROP DATABASE( IF EXISTS)? $TO_DB_NAME;|(DROP|CREATE) SCHEMA( IF EXISTS)? public;|SET default_tablespace)" \
+	| $_TO_CONNECT "sudo -i PWD=/ -u $TO_DB_USER psql -U $TO_DB_USER -nx -v ON_ERROR_STOP=on --dbname $TO_DB_NAME"

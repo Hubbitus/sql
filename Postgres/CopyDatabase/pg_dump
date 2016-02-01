@@ -12,7 +12,7 @@ DB_BIN_TO_DUMP_COEFF='1.5'
 SIZE=$( psql -U postgres -qtAw --dbname egais -c "SELECT row_to_json(t) FROM ( SELECT SUM(pg_total_relation_size(C.oid)) * $DB_BIN_TO_DUMP_COEFF as sum_size, pg_size_pretty(SUM(pg_total_relation_size(C.oid)) * $DB_BIN_TO_DUMP_COEFF ) as sum_size_pretty FROM pg_class C LEFT JOIN pg_namespace N ON (N.oid = C.relnamespace) WHERE nspname NOT IN ('pg_catalog', 'information_schema') AND nspname || '.' || relname NOT IN ('history.logged_actions') )t" ) #"
 echo EXPECTED_SIZE=$SIZE
 SIZE=$( echo "$SIZE"| jq .sum_size )
-echo "NOTICE: Please note expected size from database (stored binary) and very roughly estimated (keoff $DB_BIN_TO_DUMP_COEFF)!"
+echo "NOTICE: Please note expected size from database (stored binary) and very roughly estimated (coefficient $DB_BIN_TO_DUMP_COEFF)!"
 
 time pg_dump -U postgres --clean --if-exists --compress=0 --format=p --encoding=UTF-8 --exclude-table-data='history.logged_actions' egais \
 	| pv --progress -terabW --size $SIZE \
