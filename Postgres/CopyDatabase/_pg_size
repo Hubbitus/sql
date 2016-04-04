@@ -1,6 +1,6 @@
 #!/bin/bash
 
-. .config
+. $(dirname $0)/.config
 
 : ${FROM_DB_USER?"You must define FROM_DB_USER to continue"}
 : ${FROM_DB_NAME?"You must define FROM_DB_NAME to continue"}
@@ -9,14 +9,14 @@
 # Size of schems 'pg_catalog', 'information_schema' excluded always. You may use arbitrary SQL WHERE conditions to even change it
 : ${DB_OBJECTS_SIZE_FILTER:=" AND nspname || '.' || relname NOT IN ('history.logged_actions')"}
 
-# Coefficient 1.5 got from experiments - binary database representation smaller than dump.
-DB_BIN_TO_DUMP_COEFF='1.5'
+# Coefficient 1.7 got from experiments - binary database representation smaller than dump.
+DB_BIN_TO_DUMP_COEFF='1.65'
 
 # Unfortunately there no ternary operator in bash for strings (http://stackoverflow.com/questions/3953645/ternary-operator-in-bash, http://unix.stackexchange.com/questions/126706/bashs-conditional-operator-and-assignment)
 _CONNECT=$( [ -n "${FROM_HOST}" ] && echo "ssh -C -o CompressionLevel=9 $FROM_HOST" || echo "sh -c" )
 
-SIZE=$( $_CONNECT "sudo -i PWD=/ -u $FROM_DB_USER psql -U $FROM_DB_USER -qtAw --dbname $FROM_DB_NAME -c \"SELECT row_to_json(t) FROM ( SELECT SUM(pg_total_relation_size(C.oid)) * $DB_BIN_TO_DUMP_COEFF as sum_size, pg_size_pretty(SUM(pg_total_relation_size(C.oid)) * $DB_BIN_TO_DUMP_COEFF ) as sum_size_pretty FROM pg_class C LEFT JOIN pg_namespace N ON (N.oid = C.relnamespace) WHERE nspname NOT IN ('pg_catalog', 'information_schema') $DB_OBJECTS_SIZE_FILTER )t\"" ) #"
+SIZE=$( $_CONNECT "sudo -i PWD=/ -u $FROM_DB_USER psql -U $FROM_DB_USER -qtAw --dbname $FROM_DB_NAME -c \"SELECT row_to_json(t) FROM ( SELECT CEIL(SUM(pg_total_relation_size(C.oid)) * $DB_BIN_TO_DUMP_COEFF) as sum_size, pg_size_pretty(SUM(pg_total_relation_size(C.oid)) * $DB_BIN_TO_DUMP_COEFF ) as sum_size_pretty FROM pg_class C LEFT JOIN pg_namespace N ON (N.oid = C.relnamespace) WHERE nspname NOT IN ('pg_catalog', 'information_schema') $DB_OBJECTS_SIZE_FILTER )t\"" ) #"
 echo EXPECTED_SIZE=$SIZE
 SIZE=$( echo "$SIZE"| jq .sum_size )
 #echo SIZE=$SIZE
-echo 'NOTICE: Please note used size from database it is very roughly estimeated!'
+echo 'NOTICE: Please note - used size from database and it is very roughly estimated!'
