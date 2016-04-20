@@ -11,15 +11,15 @@ set -e
 : ${TO_DB_USER?"You must define TO_DB_USER to continue"}
 : ${TO_DB_NAME?"You must define TO_DB_NAME to continue"}
 
-# Unfortunately there no ternary operator in bash for strings (http://stackoverflow.com/questions/3953645/ternary-operator-in-bash, http://unix.stackexchange.com/questions/126706/bashs-conditional-operator-and-assignment)
-_FROM_CONNECT=$( [ -n "${FROM_HOST}" ] && echo "ssh -C -o CompressionLevel=9 $FROM_HOST" || echo "sh -c" )
-_TO_CONNECT=$( [ -n "${TO_HOST}" ] && echo "ssh -C -o CompressionLevel=9 $TO_HOST" || echo "sh -c" )
+. $(dirname $0)/_shared
 
-time $_FROM_CONNECT "sudo -i PWD=/ -u $FROM_DB_USER pg_dump -U $FROM_DB_USER --clean --if-exists --format=plain --compress=0 $FROM_EXTRA_OPTIONS $FROM_DB_NAME" \
+run FROM time pg_dump ${FROM_DB_HOST:+-h $FROM_DB_HOST} -p $FROM_DB_PORT -U $FROM_DB_USER --clean --if-exists --format=plain --compress=0 $FROM_EXTRA_OPTIONS $FROM_DB_NAME \
 	| pv --progress -terabW --size $SIZE \
-	| grep -Pv "^(DROP DATABASE( IF EXISTS)? $TO_DB_NAME;|(DROP|CREATE) SCHEMA( IF EXISTS)? public;|SET default_tablespace)" \
-	| $_TO_CONNECT "sudo -i PWD=/ -u $TO_DB_USER psql -U $TO_DB_USER -nxq -v ON_ERROR_STOP=on --dbname $TO_DB_NAME"
+	| grep -Pv "^(DROP DATABASE( IF EXISTS)? $FROM_DB_NAME;|(DROP|CREATE) SCHEMA( IF EXISTS)? public;|SET default_tablespace)" \
+	| run TO psql ${TO_DB_HOST:+-h $TO_DB_HOST} -p $TO_DB_PORT -U $TO_DB_USER -nxq -v ON_ERROR_STOP=on --dbname $TO_DB_NAME
 
 # Also reindex, vacuum and analyze new database:
-time $_TO_CONNECT "sudo -i PWD=/ -u $TO_DB_USER reindexdb -U $TO_DB_USER $TO_DB_NAME"
-time $_TO_CONNECT "sudo -i PWD=/ -u $TO_DB_USER vacuumdb --analyze --freeze -U $TO_DB_USER $TO_DB_NAME'
+echo 'Transfer complete. Start reindex:'
+run TO time reindexdb --quiet ${TO_DB_HOST:+-h $TO_DB_HOST} -U $TO_DB_USER -p $TO_DB_PORT $TO_DB_NAME
+echo 'Start vacuum:'
+run TO time vacuumdb ${TO_DB_HOST:+-h $TO_DB_HOST} -U $TO_DB_USER -p $TO_DB_PORT $TO_DB_NAME --analyze --freeze

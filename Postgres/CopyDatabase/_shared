@@ -1,0 +1,40 @@
+#!/bin/bash
+
+. $(dirname $0)/.config
+
+# Function to honor sudo amd ssh remote settings to construct and execute command.
+# With help of http://stackoverflow.com/a/25942100/307525
+#
+# @param $1 - FROM/TO literal to access variables indirect
+# @params other arguments - command with parameters to execute
+function run(){
+	kind=$1
+	shift
+
+	local __var_SUDO_USER="${kind}_SUDO_USER"
+	local __var_DB_PASS="${kind}_DB_PASS"
+
+	local __var_HOST="${kind}_HOST"
+
+	local __local=false
+
+	printf -v _command '%q ' "$@"
+
+	if [ -n "${!__var_SUDO_USER}" ]; then
+		printf -v _sudo_command '%q ' sudo -i PWD=/ PGPASSWORD="${!__var_DB_PASS}" -u "${!__var_SUDO_USER}" bash -c "$_command"
+	else
+		__local=true # to do not nest local bash
+		printf -v _sudo_command '%q ' PGPASSWORD="${!__var_DB_PASS}" bash -c "$_command"
+	fi
+
+	if [[ -n "${!__var_HOST}" ]]; then
+		printf -v _connect_command '%q ' /usr/bin/ssh -C -o CompressionLevel=9 ${!__var_HOST} "$_sudo_command"
+	else
+		[ __local ] && _connect_command="$_sudo_command" || printf -v _connect_command '%q ' PGPASSWORD="${!__var_DB_PASS}" bash -c "$_sudo_command"
+	fi
+
+	eval "$_connect_command"
+}
+
+# Example of run:
+# run FROM date +'%F %X'
