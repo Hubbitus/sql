@@ -19,9 +19,8 @@ ORDER BY
 		ELSE NULL
 	END DESC -- nulls first
 LIMIT 100
-/
 
--- Tables sizes for CURRENT database: https://wiki.postgresql.org/wiki/Disk_Usage
+-- Tables sizes for CURRENT database (can't get for others): https://wiki.postgresql.org/wiki/Disk_Usage
 SELECT
 	nspname || '.' || relname AS "relation"
 	,pg_size_pretty(pg_total_relation_size(C.oid)) AS "total_size"
@@ -32,7 +31,6 @@ SELECT
 		AND nspname !~ '^pg_toast'
 	ORDER BY pg_total_relation_size(C.oid) DESC
 	LIMIT 20;
-/
 
 -- my by stantard
 WITH rels AS(
@@ -40,22 +38,47 @@ WITH rels AS(
 		table_catalog, table_schema, table_name, table_type
 		,table_catalog || '.' || table_schema || '.' || table_name AS "relation"
 	FROM information_schema.tables
+	WHERE table_schema NOT IN ('pg_catalog', 'information_schema', 'hint_plan')
+), sizes as (
+	SELECT
+		rels.relation
+	--	,relation::regclass::oid
+		,pg_size_pretty(pg_total_relation_size(relation::regclass::oid)) AS "total_size_pretty"
+		,pg_size_pretty(pg_relation_size(relation::regclass::oid)) AS "table_size_pretty"
+		,pg_total_relation_size(relation::regclass::oid) AS "total_size_bytes"
+		,pg_relation_size(relation::regclass::oid) AS "table_size_bytes"
+	FROM rels
+), sizes_ext as (
+	SELECT
+		relation
+		,total_size_pretty
+		,table_size_pretty
+		,pg_size_pretty(total_size_bytes - table_size_bytes) as "indexes_size_pretty"
+		,total_size_bytes
+		,table_size_bytes
+		,total_size_bytes - table_size_bytes AS "indexes_size_bytes"
+	FROM sizes
 )
-SELECT
-	rels.relation
---	,relation::regclass::oid
-	,pg_size_pretty(pg_total_relation_size(relation::regclass::oid)) AS "total_size_pretty"
-	,pg_size_pretty(pg_relation_size(relation::regclass::oid)) AS "size_pretty"
-	,pg_total_relation_size(relation::regclass::oid) AS "total_size_bytes"
-	,pg_relation_size(relation::regclass::oid) AS "size_bytes"
-FROM rels
+SELECT *
+FROM sizes_ext
+UNION ALL
+SELECT -- http://stackoverflow.com/questions/18907047/postgres-db-size-command
+	'TOTAL (' || pg_size_pretty(pg_database_size(current_database())) || ')' as name
+	,pg_size_pretty(SUM(total_size_bytes))
+	,pg_size_pretty(SUM(table_size_bytes))
+	,pg_size_pretty(SUM(indexes_size_bytes))
+	,SUM(total_size_bytes)
+	,SUM(table_size_bytes)
+	,SUM(indexes_size_bytes)
+FROM sizes_ext
 ORDER BY
 	total_size_bytes DESC
-	,size_bytes DESC
-/
+	,table_size_bytes DESC
+	,indexes_size_bytes DESC
+
+
 
 SELECT pg_table_is_visible('pgbench.public.pgbench_accounts'::regclass::oid)
-/
 
 SELECT row_to_json(t)
 FROM (
