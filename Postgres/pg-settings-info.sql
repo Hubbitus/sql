@@ -24,7 +24,9 @@ WITH interesting_options AS (
 	,('fsync'), ('synchronous_commit'), ('full_page_writes') -- -> Off. Faster but unsafe
 	,('wal_buffers'), ('wal_writer_delay'), ('commit_delay') /* ↑ if fsync = on */
 	,(E'### Write Ahead Log \n  ## Checkpoints \n  http://www.postgresql.org/docs/9.4/static/runtime-config-wal.html')
-	,('checkpoint_segments'), ('checkpoint_timeout'), ('checkpoint_completion_target'), ('checkpoint_warning')
+--	,('checkpoint_segments'), ('checkpoint_timeout'), ('checkpoint_completion_target'), ('checkpoint_warning')
+-- checkpoint_segments from version 9.5 became min_wal_size and max_wal_size:
+	,('min_wal_size'), ('max_wal_size'), ('checkpoint_completion_target'), ('checkpoint_warning')
 	--
 	,(E'### Error Reporting and Logging \n  ##  Where To Log - http://www.postgresql.org/docs/9.4/static/runtime-config-logging.html')
 	,('debug_print_parse'), ('debug_print_parse'), ('debug_print_rewritten'), ('debug_print_plan')
@@ -53,4 +55,4 @@ SELECT
 FROM interesting_options o
 LEFT JOIN pg_settings s ON (s.name = o.name)
 ORDER BY o.rn
-/
+
