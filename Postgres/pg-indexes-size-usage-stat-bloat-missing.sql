@@ -14,7 +14,7 @@ SELECT
     SUM(CASE WHEN number_of_columns IS NULL THEN 0
              WHEN number_of_columns = 1 THEN 0
              ELSE 1
-           END) AS multi_column
+        END) AS multi_column
 FROM pg_namespace 
 LEFT OUTER JOIN pg_class ON pg_namespace.oid = pg_class.relnamespace
 LEFT OUTER JOIN
@@ -58,7 +58,26 @@ LEFT OUTER JOIN
     AS foo
     ON t.tablename = foo.ctablename
 WHERE t.schemaname='public'
-ORDER BY 1,2;
+	AND idx_scan < 50
+ORDER BY pg_relation_size(quote_ident(indexrelname)::text) /* index_size */ DESC;
+
+-- Finding Useless Indexes: http://it.toolbox.com/blogs/database-soup/finding-useless-indexes-28796
+-- Modified to use schemaname and do not fail 'relation not found'
+SELECT
+	idstat.schemaname
+	,idstat.relname AS table_name
+	,indexrelname AS index_name
+	,idstat.idx_scan AS times_used
+	,pg_size_pretty(pg_relation_size(idstat.schemaname || '.' || idstat.relname)) AS table_size
+	,pg_size_pretty(pg_relation_size(idstat.schemaname || '.' || indexrelname)) AS index_size
+	,n_tup_upd + n_tup_ins + n_tup_del as num_writes
+	,indexdef AS definition
+FROM pg_stat_user_indexes AS idstat
+	JOIN pg_indexes ON indexrelname = indexname
+	JOIN pg_stat_user_tables AS tabstat ON idstat.relname = tabstat.relname
+WHERE idstat.idx_scan < 200
+    AND indexdef !~* 'unique'
+ORDER BY idstat.relname, indexrelname;
 
 -- Duplicate indexes
 SELECT pg_size_pretty(SUM(pg_relation_size(idx))::BIGINT) AS SIZE,
