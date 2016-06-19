@@ -23,10 +23,13 @@ WITH interesting_options AS (
 	,(E'### Write Ahead Log -- http://www.postgresql.org/docs/9.4/static/runtime-config-wal.html')
 	,('fsync'), ('synchronous_commit'), ('full_page_writes') -- -> Off. Faster but unsafe
 	,('wal_buffers'), ('wal_writer_delay'), ('commit_delay') /* ↑ if fsync = on */
+	,('wal_level'), ('wal_keep_segments')
 	,(E'### Write Ahead Log \n  ## Checkpoints \n  http://www.postgresql.org/docs/9.4/static/runtime-config-wal.html')
 --	,('checkpoint_segments'), ('checkpoint_timeout'), ('checkpoint_completion_target'), ('checkpoint_warning')
 -- checkpoint_segments from version 9.5 became min_wal_size and max_wal_size:
 	,('min_wal_size'), ('max_wal_size'), ('checkpoint_completion_target'), ('checkpoint_warning')
+	,(E'### Write Ahead Log \n  ## Archiving - https://www.postgresql.org/docs/9.4/static/runtime-config-wal.html#RUNTIME-CONFIG-WAL-ARCHIVING')
+	,('archive_command'), ('archive_mode')
 	--
 	,(E'### Error Reporting and Logging \n  ##  Where To Log - http://www.postgresql.org/docs/9.4/static/runtime-config-logging.html')
 	,('debug_print_parse'), ('debug_print_parse'), ('debug_print_rewritten'), ('debug_print_plan')
