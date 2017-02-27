@@ -28,21 +28,54 @@ WHERE
 	)
 /
 
+// By declaration!
 SELECT
 	relid::regclass
 	,action
 	,*
 FROM history.logged_actions
-WHERE
-	row_data->'user_fkey' = 'P_26639'
-	OR (
-		relid = 'bo_user'::regclass
-		AND
-		row_data->'id' = 'P_26639'
-	)
+//WHERE
+//	row_data->'user_fkey' = 'P_26639'
+//	OR (
+//		relid = 'bo_user'::regclass
+//		AND
+//		row_data->'id' = 'P_26639'
+//	)
 ORDER BY
 	action_tstamp_stm
 /
 
 "id"=>"P_26624", "user_fkey"=>"P_26639", "created_by"=>"SPRLI_005", "party_fkey"=>"P_2350", "source_key"=>NULL, "updated_by"=>NULL,        "create_date"=>"2015-12-30 14:08:57.379503", "update_date"=>"2015-12-30 14:08:57.379503", "subscription"=>"t", "forestry_fkey"=>NULL, "source_system"=>"P", "organization_master"=>"f", "state_authority_fkey"=>NULL, "federal_district_fkey"=>NULL, "constituent_entity_fkey"=>NULL
 "id"=>"P_26624", "user_fkey"=>"P_26639", "created_by"=>"SPRLI_005", "party_fkey"=>"P_2350", "source_key"=>NULL, "updated_by"=>"SPRLI_005", "create_date"=>"2015-12-30 14:08:57.379503", "update_date"=>"2015-12-30 14:09:30.458383", "subscription"=>"t", "forestry_fkey"=>NULL, "source_system"=>"P", "organization_master"=>"t", "state_authority_fkey"=>NULL, "federal_district_fkey"=>NULL, "constituent_entity_fkey"=>NULL
+/
+
+
+SELECT
+	row_data::text,
+	changed_fields::text,
+	COALESCE(aoid.tablename, relid::regclass::text) as table_name
+	,relid::regclass::text as rlh_table_name
+	,aoid.tablename as alo_table_name
+	,ACTION
+	,*
+FROM
+	history.logged_actions
+	LEFT JOIN history.alo_table_oids aoid ON (aoid.alo_table_oid = relid)
+WHERE
+	(
+		COALESCE(aoid.tablename, relid::regclass::text) = 'bo_contract_hardwood_deal' 
+		AND (
+			row_data->'main_deal_number' = '0001007709640099007801298631'
+			OR row_data->'id' = 'P_240562'
+		)
+	)
+	OR row_data->'bo_document_fkey' = 'P_2438650'
+	OR (
+		COALESCE(aoid.tablename, relid::regclass::text) = 'bo_document_base' 
+		AND row_data->'id' = 'P_2438650'
+	)
+/
+
+SELECT *
+FROM bo_contract_hardwood_deal
+WHERE main_deal_number = '0001007709640099007801298631'
