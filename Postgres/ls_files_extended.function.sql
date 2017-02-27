@@ -21,11 +21,13 @@ CREATE OR REPLACE FUNCTION ls_files_extended(path text, filter text default null
 $BODY$
 BEGIN
   SET client_min_messages TO WARNING;
-  CREATE TEMP TABLE _files(filename text, size bigint) ON COMMIT DROP;
+  DROP TABLE IF EXISTS __tmp_files; -- That require to call that function twice in transaction (in one query)
 
-  EXECUTE format($$COPY _files FROM PROGRAM 'find %s -maxdepth 1 -type f -printf "%%f\t%%s\n"'$$, path);
+  CREATE TEMP TABLE __tmp_files(filename text, size bigint) ON COMMIT DROP;
 
-  RETURN QUERY EXECUTE format($$SELECT * FROM _files WHERE %s ORDER BY %s $$, concat_ws(' AND ', 'true', filter), sort);
+  EXECUTE format($$COPY __tmp_files FROM PROGRAM 'find %s -maxdepth 1 -type f -printf "%%f\t%%s\n"'$$, path);
+
+  RETURN QUERY EXECUTE format($$SELECT * FROM __tmp_files WHERE %s ORDER BY %s $$, concat_ws(' AND ', 'true', filter), sort);
 END;
 $BODY$ LANGUAGE plpgsql SECURITY DEFINER;
 
