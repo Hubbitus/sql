@@ -19,6 +19,7 @@ ORDER BY
 		ELSE NULL
 	END DESC -- nulls first
 LIMIT 100
+/
 
 -- Tables sizes for CURRENT database (can't get for others): https://wiki.postgresql.org/wiki/Disk_Usage
 SELECT
@@ -31,14 +32,15 @@ SELECT
 		AND nspname !~ '^pg_toast'
 	ORDER BY pg_total_relation_size(C.oid) DESC
 	LIMIT 20;
-
 -- my by stantard
 WITH rels AS(
 	SELECT
 		table_catalog, table_schema, table_name, table_type
 		,table_catalog || '.' || table_schema || '.' || table_name AS "relation"
 	FROM information_schema.tables
-	WHERE table_schema NOT IN ('pg_catalog', 'information_schema', 'hint_plan')
+	WHERE table_schema NOT IN ('pg_catalog', 'information_schema', 'hint_plan'
+--		,'history'
+	)
 ), sizes as (
 	SELECT
 		rels.relation
@@ -63,7 +65,7 @@ SELECT *
 FROM sizes_ext
 UNION ALL
 SELECT -- http://stackoverflow.com/questions/18907047/postgres-db-size-command
-	'TOTAL (' || pg_size_pretty(pg_database_size(current_database())) || ')' as name
+	'TOTAL (' || pg_size_pretty(SUM(total_size_bytes)) || ')' as name
 	,pg_size_pretty(SUM(total_size_bytes))
 	,pg_size_pretty(SUM(table_size_bytes))
 	,pg_size_pretty(SUM(indexes_size_bytes))
@@ -75,10 +77,11 @@ ORDER BY
 	total_size_bytes DESC
 	,table_size_bytes DESC
 	,indexes_size_bytes DESC
-
+/
 
 
 SELECT pg_table_is_visible('pgbench.public.pgbench_accounts'::regclass::oid)
+/
 
 SELECT row_to_json(t)
 FROM (
