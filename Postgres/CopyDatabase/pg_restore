@@ -1,14 +1,10 @@
 #!/bin/bash
 
-# rsync -aHErlDz --acls --xattrs --stats --human-readable --partial --progress --itemize-changes --inplace /var/lib/pgsql/9.4/data/base/ /store/postgres_data_base
+: ${1?"Please provide file to restore from. Like: $(basename $0) egais_dump-2017-06-28-13_02_28.sql.gz"}
 
-#ssh -C -o CompressionLevel=9 server1  cat /mnt/wdHDD/postgres/2015-11-13_00-15-01_db_dump_egais.sql.gz \
+time pigz --decompress --stdout "$1" \
+	| pv --progress -terabW --size $( pigz --decompress --stdout "$1" | wc -c ) \
+	| psql -h localhost -p 5432 -U postgres egais
 
-HOST=egais.perf.db.master
-
-time /usr/bin/ssh -C -o CompressionLevel=9 $HOST sudo -u postgres pg_dump --clean --format=c --compress=0 --exclude-table='history.logged_actions' egais \
-	| pv --progress -terabW \
-	| pg_restore --clean --create -U postgres --exit-on-error --no-data-for-failed-tables
-
-
-#	| su -- postgres -c "pg_restore --clean --create -U postgres --exit-on-error --verbose --no-data-for-failed-tables --dbname egais"
+# Pg_restore if is noit PLAIN format used:
+#	| pg_restore -h localhost -p 5432 -U postgres --clean --create --exit-on-error --no-data-for-failed-tables

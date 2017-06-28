@@ -12,19 +12,18 @@ SQL=$(cat <<HEREDOC
 	SELECT row_to_json(t)
 	FROM (
 		SELECT
-			CEIL(SUM(pg_total_relation_size(C.oid)) * $DB_BIN_TO_DUMP_COEFF) as sum_size
-			,pg_size_pretty(SUM(pg_total_relation_size(C.oid)) * $DB_BIN_TO_DUMP_COEFF) as sum_size_pretty
-		FROM
-			pg_class C
-			LEFT JOIN pg_namespace N ON (N.oid = C.relnamespace)
-		WHERE nspname NOT IN ('pg_catalog', 'information_schema') $DB_OBJECTS_SIZE_FILTER
+			CEIL(SUM(pg_total_relation_size((table_catalog || '.' || table_schema || '.' || table_name)::regclass::oid))) AS sum_size
+			,pg_size_pretty(CEIL(SUM(pg_total_relation_size((table_catalog || '.' || table_schema || '.' || table_name)::regclass::oid)))) AS sum_size_pretty
+		FROM information_schema.tables
+		WHERE table_schema NOT IN ('pg_catalog', 'information_schema') $DB_OBJECTS_SIZE_FILTER
+			AND table_catalog || '.' || table_schema || '.' || table_name NOT IN ('history.logged_actions')
 	) t
 HEREDOC
 )
 
 . $(dirname $0)/_shared
 
-SIZE=$( run FROM psql -p $FROM_DB_PORT -U $FROM_DB_USER -qtAw --dbname $FROM_DB_NAME -c "$SQL" )
+SIZE=$( run FROM psql -h $FROM_DB_HOST -p $FROM_DB_PORT -U $FROM_DB_USER -qtAw --dbname $FROM_DB_NAME -c "$SQL" )
 echo EXPECTED_SIZE=$SIZE
 SIZE=$( echo "$SIZE" | jq .sum_size )
 echo 'NOTICE: Please note - used size from database and it is very roughly estimated!'

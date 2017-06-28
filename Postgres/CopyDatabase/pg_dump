@@ -8,3 +8,5 @@ time pg_dump -U postgres --clean --if-exists --compress=0 --format=p --encoding=
 	| pv --progress -terabW --size $SIZE \
 	| pigz -9 \
 	> egais_dump-$(date +'%F-%H_%M_%S').sql.gz
+
+echo =Result: $?=
