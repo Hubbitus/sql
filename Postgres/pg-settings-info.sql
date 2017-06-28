@@ -41,6 +41,7 @@ WITH interesting_options AS (
 		,('log_parser_stats'), ('log_planner_stats'), ('log_executor_stats'), ('log_statement_stats')
 		--
 		,(E'### Automatic Vacuuming - http://www.postgresql.org/docs/9.4/static/runtime-config-autovacuum.html')
+		,('autovacuum')
 		,('log_autovacuum_min_duration'), ('autovacuum_naptime'), ('autovacuum_vacuum_threshold'), ('autovacuum_analyze_threshold')
 		--
 		,(E'### Client Connection Defaults - http://www.postgresql.org/docs/9.4/static/runtime-config-client.html')
@@ -61,4 +62,3 @@ SELECT
 FROM interesting_options o
 LEFT JOIN pg_settings s ON (s.name = o.name)
 ORDER BY o.rn
-
