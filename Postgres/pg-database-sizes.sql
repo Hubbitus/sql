@@ -31,8 +31,10 @@ SELECT
 		AND C.relkind <> 'i'
 		AND nspname !~ '^pg_toast'
 	ORDER BY pg_total_relation_size(C.oid) DESC
-	LIMIT 20;
--- my by stantard
+	LIMIT 20
+/
+
+-- My extended variant with tables and indexes sizes:
 WITH rels AS(
 	SELECT
 		table_catalog, table_schema, table_name, table_type
@@ -87,3 +89,4 @@ SELECT row_to_json(t)
 FROM (
 	SELECT SUM(pg_total_relation_size(C.oid)) as sum_size, pg_size_pretty(SUM(pg_total_relation_size(C.oid))) as sum_size_pretty FROM pg_class C LEFT JOIN pg_namespace N ON (N.oid = C.relnamespace) WHERE nspname NOT IN ('pg_catalog', 'information_schema') AND nspname || '.' || relname NOT IN ('history.logged_actions')
 )t
+/
