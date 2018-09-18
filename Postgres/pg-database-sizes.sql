@@ -97,8 +97,14 @@ SELECT
 	,pg_size_pretty(pg_relation_size('history.logged_actions'::regclass, 'init'))	as pg_relation_size__init	-- Disk space used by the specified fork ('main', 'fsm', 'vm', or 'init') of the specified table or index
 /
 
-SELECT pg_table_is_visible('pgbench.public.pgbench_accounts'::regclass::oid)
+// HOT updates: https://www.dbrnd.com/2016/12/postgresql-increase-the-speed-of-update-query-using-hot-update-heap-only-tuple-mvcc-fill-factor-vacuum-fragmentation/
+SELECT pg_stat_get_tuples_hot_updated('history.logged_actions'::regclass);
+
 /
+CREATE EXTENSION pg_freespace;
+SELECT * FROM pg_freespace('table_name');
+/
+
 
 SELECT row_to_json(t)
 FROM (
