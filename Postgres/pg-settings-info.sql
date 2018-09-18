@@ -4,7 +4,7 @@ WITH interesting_options AS (
 		FROM (VALUES
 --		(E'### Resource Consumption - http://www.postgresql.org/docs/9.4/static/runtime-config-resource.html')
 		(E'### Resource Consumption \n  ## Memory - http://www.postgresql.org/docs/9.4/static/runtime-config-resource.html')
-		,('work_mem'), ('shared_buffers'), ('sort_mem'), ('maintenance_work_mem'), ('effective_cache_size')
+		,('work_mem'), ('shared_buffers'), ('sort_mem'), ('maintenance_work_mem'), ('temp_buffers'), ('effective_cache_size')
 		,('huge_pages')
 		,(E'### Resource Consumption \n  ## Costs - http://www.postgresql.org/docs/9.4/static/runtime-config-resource.html')
 		,('random_page_cost'), ('seq_page_cost'), ('cpu_tuple_cost'), ('cpu_index_tuple_cost'), ('cpu_operator_cost')
@@ -27,7 +27,8 @@ WITH interesting_options AS (
 		,(E'### Write Ahead Log \n  ## Checkpoints \n  http://www.postgresql.org/docs/9.4/static/runtime-config-wal.html')
 --		,('checkpoint_segments'), ('checkpoint_timeout'), ('checkpoint_completion_target'), ('checkpoint_warning')
 -- checkpoint_segments from version 9.5 became min_wal_size and max_wal_size:
-		,('min_wal_size'), ('max_wal_size'), ('checkpoint_completion_target'), ('checkpoint_warning')
+--		,('min_wal_size'), ('max_wal_size')
+		,('checkpoint_completion_target'), ('checkpoint_warning')
 		,(E'### Write Ahead Log \n  ## Archiving - https://www.postgresql.org/docs/9.4/static/runtime-config-wal.html#RUNTIME-CONFIG-WAL-ARCHIVING')
 		,('archive_command'), ('archive_mode')
 		--
@@ -49,6 +50,16 @@ WITH interesting_options AS (
 		--
 		,(E'### Preset Options (build or initdb time only) - https://www.postgresql.org/docs/current/static/runtime-config-preset.html')
 		,('block_size'), ('data_checksums'), ('lc_collate'), ('wal_block_size'), ('wal_segment_size')
+		--
+		,(E'### Logging options - https://www.postgresql.org/docs/9.4/static/runtime-config-logging.html')
+		,('log_min_duration_statement'), ('log_line_prefix')
+		--
+		,(E'### 18.3.1. Connection Settings - https://www.postgresql.org/docs/9.4/static/runtime-config-connection.html')
+		,('tcp_keepalives_idle'), ('tcp_keepalives_interval'), ('tcp_keepalives_count')
+		--
+		,(E'### 18.7.3. Genetic Query Optimizer - https://www.postgresql.org/docs/9.4/static/runtime-config-query.html')
+		,('geqo'), ('geqo_threshold'), ('geqo_effort'), ('geqo_pool_size'), ('geqo_generations'), ('geqo_selection_bias'), ('geqo_seed')
+		,('join_collapse_limit')
 		) v (name)
 )
 SELECT
@@ -62,3 +73,6 @@ SELECT
 FROM interesting_options o
 LEFT JOIN pg_settings s ON (s.name = o.name)
 ORDER BY o.rn
+/
+
+SELECT * FROM pg_file_settings
