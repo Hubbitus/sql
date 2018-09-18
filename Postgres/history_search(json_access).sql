@@ -77,5 +77,41 @@ WHERE
 /
 
 SELECT *
-FROM bo_contract_hardwood_deal
-WHERE main_deal_number = '0001007709640099007801298631'
+FROM bo_contract_lease
+/
+
+SELECT
+	row_data->'id' as base_id
+	,c.id as contract_lease_id
+	,'http://lesegais.ru/portal/#tab=ContractLease&id=' || c.id as URL
+
+//	,'history->' as history
+//	,row_data::text
+//	,changed_fields::text
+//	,COALESCE(aoid.tablename, relid::regclass::text) as table_name
+//	,relid::regclass::text as rlh_table_name
+//	,aoid.tablename as alo_table_name
+//	,ACTION
+//	,'...'
+//	,*
+FROM
+	history.logged_actions
+	LEFT JOIN history.alo_table_oids aoid ON (aoid.alo_table_oid = relid)
+	--
+		JOIN bo_document_base b ON b.id = row_data->'id'
+			JOIN lu_doc_type dt ON (dt.id = b.doc_type_fkey)
+			JOIN bo_contract_lease c ON (c.bo_document_fkey = b.id)
+WHERE
+	action = 'U'
+	AND COALESCE(aoid.tablename, relid::regclass::text) = 'bo_document_base'
+	AND changed_fields ? 'contract_end_date'
+		AND dt.enum = 'CONTRACT_LEASE'
+//ORDER BY action_tstamp_stm DESC
+LIMIT 10
+/
+
+
+SELECT *
+FROM lu_doc_type
+/
+
