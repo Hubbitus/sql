@@ -6,5 +6,5 @@ time pigz --decompress --stdout "$1" \
 	| pv --progress -terabW --size $( pigz --decompress --stdout "$1" | wc -c ) \
 	| psql -h localhost -p 5432 -U postgres egais
 
-# Pg_restore if is noit PLAIN format used:
+# Pg_restore if is not PLAIN format used:
 #	| pg_restore -h localhost -p 5432 -U postgres --clean --create --exit-on-error --no-data-for-failed-tables
