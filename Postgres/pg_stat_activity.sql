@@ -4,7 +4,8 @@
 	,to_char(CURRENT_TIMESTAMP - xact_start, 'DD HH24:MI:SS.MS') as transaction_time
 	,to_char(CURRENT_TIMESTAMP - state_change, 'DD HH24:MI:SS.MS') as state_change_time
 	,state
-//	,waiting
+	,wait_event
+	,wait_event_type
 	,datname, pid
 	,query
 	,usename, application_name, client_addr, backend_start, xact_start, query_start, state_change
@@ -19,23 +20,21 @@ WHERE
 	1=1
 	AND state NOT IN ('idle')
 	AND pid != pg_backend_pid()
-	AND state = 'idle in transaction'
+--	AND state = 'idle in transaction'
 --	AND '10.0.17.32' = client_addr
+--	AND wait_event_type = 'Lock'
 ORDER BY
 --	query_time DESC
 --	client_conn_time DESC
 --	transaction_time DESC
 --	state_change_time DESC
 	transaction_time DESC, query_time DESC
-/
+;
 
-SELECT pg_terminate_backend(734)
-/
-
-REINDEX TABLE bo_document_base
-/
+SELECT pg_terminate_backend(17803)
 
 -- Vacuum progress
 -- https://www.dbrnd.com/2017/12/postgresql-check-the-progress-of-running-vacuum/
 SELECT * FROM pg_stat_progress_vacuum
-/
+;
+
