@@ -47,13 +47,14 @@ ORDER BY 2;
 
 -- Index size/usage statistics
 SELECT
-	t.tablename,
-	indexname,
-	c.reltuples AS num_rows,
-	pg_size_pretty(pg_relation_size(quote_ident(t.tablename)::text)) AS table_size,
-	pg_size_pretty(pg_relation_size(quote_ident(indexrelname)::text)) AS index_size,
-	CASE
-		WHEN indisunique THEN 'Y'
+	t.schemaname
+	,t.tablename
+	,ind.indexname
+	,c.reltuples AS num_rows
+	,pg_size_pretty(pg_table_size((t.schemaname || '.' || t.tablename)::regclass)) AS table_size
+	,pg_size_pretty(pg_table_size((t.schemaname || '.' || indexrelname)::regclass)) AS index_size -- pg_table_size work in indexes too: https://stackoverflow.com/questions/46470030/postgresql-index-size-and-value-number#comment79901419_46470030
+	,CASE
+		WHEN ind.indisunique THEN 'Y'
 		ELSE 'N'
 	END AS UNIQUE,
 	idx_scan AS number_of_scans,
@@ -70,11 +71,22 @@ LEFT OUTER JOIN
 			JOIN pg_class c ON c.oid = x.indrelid
 			JOIN pg_class ipg ON ipg.oid = x.indexrelid
 			JOIN pg_stat_all_indexes psai ON x.indexrelid = psai.indexrelid
-	) AS foo ON t.tablename = foo.ctablename
-WHERE t.schemaname='public'
-		AND idx_scan < 50
-ORDER BY pg_relation_size(quote_ident(indexrelname)::text) /* index_size */ DESC;
+	) AS ind ON (t.tablename = ind.ctablename)
+//WHERE
+//	t.schemaname='public'
+//	AND idx_scan < 50
+ORDER BY pg_table_size((t.schemaname || '.' || t.tablename)::regclass) /* AS table_size */ DESC, pg_table_size((t.schemaname || '.' || indexrelname)::regclass) /* index_size */ DESC
+/
+///////
 
+SELECT 'history.logged_actions_action_idx'::regclass
+
+/
+SELECT pg_table_size('history.logged_actions_action_idx'::regclass)
+
+//////////////////////////////
+
+/
 -- Finding Useless Indexes: http://it.toolbox.com/blogs/database-soup/finding-useless-indexes-28796
 -- Modified to use schemaname and do not fail 'relation not found'
 SELECT
@@ -82,8 +94,8 @@ SELECT
 		,idstat.relname AS table_name
 		,indexrelname AS index_name
 		,idstat.idx_scan AS times_used
-		,pg_size_pretty(pg_relation_size(idstat.schemaname || '.' || idstat.relname)) AS table_size_human
-		,pg_size_pretty(pg_relation_size(idstat.schemaname || '.' || indexrelname)) AS index_size_human
+		,pg_size_pretty(pg_table_size(idstat.schemaname || '.' || idstat.relname)) AS table_size_human
+		,pg_size_pretty(pg_indexes_size(idstat.schemaname || '.' || indexrelname)) AS index_size_human
 		,pg_relation_size(idstat.schemaname || '.' || idstat.relname) AS table_size
 		,pg_relation_size(idstat.schemaname || '.' || indexrelname) AS index_size
 		,n_tup_upd + n_tup_ins + n_tup_del as num_writes
@@ -183,3 +195,30 @@ FROM (
 ) AS sml
 WHERE sml.relpages - otta > 0 OR ipages - iotta > 10
 ORDER BY wastedbytes DESC, wastedibytes DESC;
+/
+
+
+/*
+Find total Live Tuples and Dead Tuples (Row) of a Table
+https://www.dbrnd.com/2016/10/postgresql-script-to-find-total-live-tuples-and-dead-tuples-row-of-a-table-execute-vacuum-remove-fragmentation-improve-performance/
+*/
+SELECT
+	relname AS ObjectName
+	,pg_stat_get_live_tuples(c.oid) AS LiveTuples
+	,pg_stat_get_dead_tuples(c.oid) AS DeadTuples
+FROM pg_class c
+ORDER BY DeadTuples DESC
+/
+
+SELECT
+	relname AS TableName
+	,n_live_tup AS LiveTuples
+	,n_dead_tup AS DeadTuples
+FROM pg_stat_user_tables
+ORDER BY DeadTuples DESC
+/
+
+SELECT 'bo_cutting_plot'::regclass::oid
+/
+
+SELECT pg_relation_filepath('bo_cutting_plot'::regclass);
