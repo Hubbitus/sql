@@ -72,7 +72,8 @@ SELECT
 		,s.setting as cur_value_raw, s.unit, s.min_val, s.max_val, s.boot_val, s.reset_val, s.category, s.enumvals, s.short_desc, s.extra_desc, s.context, s.vartype, s.source, s.sourcefile, s.sourceline
 FROM interesting_options o
 LEFT JOIN pg_settings s ON (s.name = o.name)
-ORDER BY o.rn
-/
+ORDER BY o.rn;
 
 SELECT * FROM pg_file_settings
+
+SELECT current_setting('shared_buffers')
