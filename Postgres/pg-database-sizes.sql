@@ -41,9 +41,9 @@ WITH rels AS(
 		table_catalog, table_schema, table_name, table_type
 		,table_catalog || '.' || table_schema || '.' || table_name AS "relation"
 	FROM information_schema.tables
-	WHERE table_schema NOT IN ('pg_catalog', 'information_schema', 'hint_plan'
---		,'history'
-	)
+	WHERE
+		table_schema NOT IN ('pg_catalog', 'information_schema', 'hint_plan')
+		AND table_type != 'FOREIGN'
 ), sizes as (
 	SELECT
 		rels.relation
