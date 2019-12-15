@@ -18,8 +18,7 @@ ORDER BY
 		THEN pg_catalog.pg_database_size(d.datname)
 		ELSE NULL
 	END DESC -- nulls first
-LIMIT 100
-/
+LIMIT 100;
 
 -- Tables sizes for CURRENT database (can't get for others): https://wiki.postgresql.org/wiki/Disk_Usage
 SELECT
@@ -32,10 +31,10 @@ SELECT
 		AND nspname !~ '^pg_toast'
 	ORDER BY pg_total_relation_size(C.oid) DESC
 	LIMIT 20
-/
+;
 
 -- My extended variant with tables and indexes sizes:
-//CREATE TABLE tmp__t1 AS
+-- CREATE TABLE tmp__t1 AS
 WITH rels AS(
 	SELECT
 		table_catalog, table_schema, table_name, table_type
@@ -82,9 +81,10 @@ ORDER BY
 	total_size_bytes DESC
 	,table_size_bytes DESC
 	,indexes_size_bytes DESC
-/
+;
 
 -- https://www.postgresql.org/docs/current/static/functions-admin.html
+-- On single table:
 SELECT
 	pg_size_pretty(pg_total_relation_size('history.logged_actions'::regclass))		as pg_total_relation_size	-- Total disk space used by the specified table, including all indexes and TOAST data
 	,pg_size_pretty(pg_indexes_size('history.logged_actions'::regclass))			as pg_indexes_size			-- Total disk space used by indexes attached to the specified table
@@ -95,20 +95,38 @@ SELECT
 	,pg_size_pretty(pg_relation_size('history.logged_actions'::regclass, 'fsm'))	as pg_relation_size__fsm	-- Disk space used by the specified fork ('main', 'fsm', 'vm', or 'init') of the specified table or index
 	,pg_size_pretty(pg_relation_size('history.logged_actions'::regclass, 'vm'))		as pg_relation_size__vm		-- Disk space used by the specified fork ('main', 'fsm', 'vm', or 'init') of the specified table or index
 	,pg_size_pretty(pg_relation_size('history.logged_actions'::regclass, 'init'))	as pg_relation_size__init	-- Disk space used by the specified fork ('main', 'fsm', 'vm', or 'init') of the specified table or index
-/
+;
+-- And on index:
+SELECT
+	pg_size_pretty(pg_total_relation_size('history.logged_actions_action_idx'::regclass))		as pg_total_relation_size	-- Total disk space used by the specified table, including all indexes and TOAST data
+	,pg_size_pretty(pg_indexes_size('history.logged_actions_action_idx'::regclass))				as pg_indexes_size			-- Total disk space used by indexes attached to the specified table
+	,pg_size_pretty(pg_table_size('history.logged_actions_action_idx'::regclass))				as pg_table_size			-- Disk space used by the specified table, excluding indexes (but including TOAST, free space map, and visibility map)
+	,'=>' as "=>"
+	,pg_size_pretty(pg_relation_size('history.logged_actions_action_idx'::regclass))			as pg_relation_size			-- Shorthand for pg_relation_size(..., 'main') => Disk space used by the specified fork ('main', 'fsm', 'vm', or 'init') of the specified table or index
+	,pg_size_pretty(pg_relation_size('history.logged_actions_action_idx'::regclass, 'main'))	as pg_relation_size__main	-- Disk space used by the specified fork ('main', 'fsm', 'vm', or 'init') of the specified table or index
+	,pg_size_pretty(pg_relation_size('history.logged_actions_action_idx'::regclass, 'fsm'))		as pg_relation_size__fsm	-- Disk space used by the specified fork ('main', 'fsm', 'vm', or 'init') of the specified table or index
+	,pg_size_pretty(pg_relation_size('history.logged_actions_action_idx'::regclass, 'vm'))		as pg_relation_size__vm		-- Disk space used by the specified fork ('main', 'fsm', 'vm', or 'init') of the specified table or index
+	,pg_size_pretty(pg_relation_size('history.logged_actions_action_idx'::regclass, 'init'))	as pg_relation_size__init	-- Disk space used by the specified fork ('main', 'fsm', 'vm', or 'init') of the specified table or index
+;
 
-// HOT updates: https://www.dbrnd.com/2016/12/postgresql-increase-the-speed-of-update-query-using-hot-update-heap-only-tuple-mvcc-fill-factor-vacuum-fragmentation/
+-- HOT updates: https://www.dbrnd.com/2016/12/postgresql-increase-the-speed-of-update-query-using-hot-update-heap-only-tuple-mvcc-fill-factor-vacuum-fragmentation/
 SELECT pg_stat_get_tuples_hot_updated('history.logged_actions'::regclass);
 
-/
 CREATE EXTENSION pg_freespace;
 SELECT * FROM pg_freespace('table_name');
-/
 
 
 SELECT row_to_json(t)
 FROM (
 	SELECT SUM(pg_total_relation_size(C.oid)) as sum_size, pg_size_pretty(SUM(pg_total_relation_size(C.oid))) as sum_size_pretty FROM pg_class C LEFT JOIN pg_namespace N ON (N.oid = C.relnamespace) WHERE nspname NOT IN ('pg_catalog', 'information_schema') AND nspname || '.' || relname NOT IN ('history.logged_actions')
 )t
-/
+;
 
+SELECT id, type, length(value) as value_length, pg_size_pretty(length(value)::bigint) as value_length_human, name, created_at, created_by, updated_at, updated_by, version, active
+FROM meta_draft
+--LIMIT 5
+
+
+SELECT id, type, length(value) as value_length, pg_size_pretty(length(value)::bigint) as value_length_human, name, created_at, created_by, updated_at, updated_by, version, active
+FROM meta_draft
+WHERE version NOT IN (SELECT MAX(version) FROM meta_draft)
