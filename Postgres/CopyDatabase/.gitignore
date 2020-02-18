@@ -1,2 +1,5 @@
 # That is config with real settings. Possibly with passwords also
 .config
+
+*.gz
+*.log

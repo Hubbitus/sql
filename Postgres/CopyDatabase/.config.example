@@ -3,17 +3,18 @@
 # Warning. This is example configuration. Please rename it to ".config" for start editing.
 
 # You may define FROM_HOST or TO_HOST or both. If it is not defined - local postgress used. Otherwise ssh connection established to host
-# FROM_DB_HOST/TO_DB_HOST is *NOT THE SAME* as FROM_HOST/TO_HOST. They are define host to connect to postgtress itself from possible ssh connected host!
-FROM_HOST=egais.db.master
-#FROM_DB_HOST=localhost
+# FROM_DB_HOST/TO_DB_HOST is *NOT THE SAME* as FROM_HOST/TO_HOST. They are define host to connect to postgtres itself from possible ssh connected host!
+#FROM_HOST=localhost
+FROM_DB_HOST=localhost
 FROM_DB_PORT=5432
-FROM_DB_NAME=unidata
+FROM_DB_NAME=egais
 FROM_DB_USER=postgres
 FROM_SUDO_USER=$FROM_DB_USER
 # Password optional - sudo may be used together with trust authentification.
-FROM_DB_PASS='SomeSuperPass'
+#FROM_DB_PASS='SomeSuperPass'
 # Some additional dump options. Lite tables exclusion
 FROM_EXTRA_OPTIONS="--exclude-table-data='history.logged_actions'"
+
 #TO_HOST=localhost
 #TO_SUDO_USER
 TO_DB_USER=postgres
@@ -23,8 +24,8 @@ TO_DB_PORT=54321
 TO_DB_PASS='AnotherSuperPass'
 
 # Additional optional filter to exclude objects from size calculation (which you do not plan transfer then)
-# Size of schems 'pg_catalog', 'information_schema' excluded always. You may use arbitrary SQL WHERE conditions to even change it
-DB_OBJECTS_SIZE_FILTER=" AND nspname || '.' || relname NOT IN ('history.logged_actions')"
+# Size of schems 'pg_catalog', 'information_schema' excluded always. You may use arbitrary SQL WHERE addition conditions (start it from " AND") to even change it
+DB_OBJECTS_SIZE_FILTER=" AND table_catalog || '.' || table_schema || '.' || table_name NOT IN ('egais.history.logged_actions')"
 
 # Database size by postgres report to dump size. Coefficient 1.7 got from experiments - binary database representation smaller than dump.
 DB_BIN_TO_DUMP_COEFF='1.65'

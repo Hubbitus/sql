@@ -2,11 +2,23 @@
 
 . $(dirname $0)/.config
 
+: ${FROM_DB_HOST?"You must define FROM_DB_HOST to continue"}
+: ${FROM_DB_USER?"You must define FROM_DB_USER to continue"}
+: ${FROM_DB_NAME?"You must define FROM_DB_NAME to continue"}
+
+set -e
+
 . $(dirname $0)/_pg_size
 
-time pg_dump -U postgres --clean --if-exists --compress=0 --format=p --encoding=UTF-8 --exclude-table-data='history.logged_actions' egais \
-	| pv --progress -terabW --size $SIZE \
-	| pigz -9 \
-	> egais_dump-$(date +'%F-%H_%M_%S').sql.gz
+DATE=$(date +'%F-%H_%M_%S')
+
+time pg_dump -h ${FROM_DB_HOST} -U ${FROM_DB_USER} --clean --if-exists --blobs --compress=0 --format=p --encoding=UTF-8 --dbname ${FROM_DB_NAME} ${FROM_EXTRA_OPTIONS} -v \
+	2> >( ts "[%H:%M:%.S]" | ts -i \
+		| tee "dump.${FROM_DB_NAME}.${DATE}.log" 1>&2
+	) \
+		| pv --progress -terabW --size $SIZE \
+			| pigz -4 \
+				> "dump.${FROM_DB_NAME}.${DATE}.sql.gz" \
+
 
 echo =Result: $?=

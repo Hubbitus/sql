@@ -2,7 +2,7 @@
 
 . $(dirname $0)/.config
 
-# Function to honor sudo amd ssh remote settings to construct and execute command.
+# Function to honor sudo and ssh remote settings to construct and execute command.
 # With help of http://stackoverflow.com/a/25942100/307525
 #
 # @param $1 - FROM/TO literal to access variables indirect
