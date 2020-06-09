@@ -60,6 +60,9 @@ WITH interesting_options AS (
 		,(E'### 18.7.3. Genetic Query Optimizer - https://www.postgresql.org/docs/9.4/static/runtime-config-query.html')
 		,('geqo'), ('geqo_threshold'), ('geqo_effort'), ('geqo_pool_size'), ('geqo_generations'), ('geqo_selection_bias'), ('geqo_seed')
 		,('join_collapse_limit')
+		--
+		,(E'### ?? replication settings')
+		,('hot_standby_feedback'), ('max_standby_archive_delay'), ('max_standby_streaming_delay'), ('hot_standby_feedback')
 		) v (name)
 )
 SELECT
