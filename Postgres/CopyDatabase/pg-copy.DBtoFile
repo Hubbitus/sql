@@ -1,0 +1,18 @@
+#!/bin/bash
+
+set -e -o pipefail
+
+. $(dirname $0)/.config
+. $(dirname $0)/_pg_size
+
+: ${FROM_DB_USER?"You must define FROM_DB_USER to continue"}
+: ${FROM_DB_NAME?"You must define FROM_DB_NAME to continue"}
+: ${TO_LOCAL_FILE?"You must define TO_LOCAL_FILE to continue"}
+
+. $(dirname $0)/_shared
+
+run FROM time pg_dump ${FROM_DB_HOST:+-h $FROM_DB_HOST} ${FROM_DB_PORT:+-p $FROM_DB_PORT} -U $FROM_DB_USER --clean --if-exists --format=plain --compress=0 $FROM_EXTRA_OPTIONS $FROM_DB_NAME \
+	| pv --progress -terabW --size $SIZE \
+		| grep -Pv "^(DROP DATABASE( IF EXISTS)? $FROM_DB_NAME;|(DROP|CREATE) SCHEMA( IF EXISTS)? public;|SET default_tablespace)" \
+			| pigz -4 \
+				> "${TO_LOCAL_FILE}" \
