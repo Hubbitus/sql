@@ -23,7 +23,7 @@ HEREDOC
 
 . $(dirname $0)/_shared
 
-SIZE=$( run FROM psql -h $FROM_DB_HOST -p $FROM_DB_PORT -U $FROM_DB_USER -qtAw --dbname $FROM_DB_NAME -c "$SQL" )
+SIZE=$( run FROM psql ${FROM_DB_HOST:+"-h $FROM_DB_HOST"} ${FROM_DB_PORT:+"-p $FROM_DB_PORT"} -U $FROM_DB_USER -qtAw --dbname $FROM_DB_NAME -c "$SQL" )
 echo EXPECTED_SIZE=$SIZE
 SIZE=$( echo "$SIZE" | jq .sum_size )
 echo 'NOTICE: Please note - used size from database and it is very roughly estimated!'

@@ -20,5 +20,4 @@ time pg_dump -h ${FROM_DB_HOST} -U ${FROM_DB_USER} --clean --if-exists --blobs -
 			| pigz -4 \
 				> "dump.${FROM_DB_NAME}.${DATE}.sql.gz" \
 
-
 echo =Result: $?=

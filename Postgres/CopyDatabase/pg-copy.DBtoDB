@@ -1,7 +1,6 @@
 #!/bin/bash
 
-set -o pipefail
-set -e
+set -e -o pipefail
 
 . $(dirname $0)/.config
 . $(dirname $0)/_pg_size
@@ -13,10 +12,10 @@ set -e
 
 . $(dirname $0)/_shared
 
-run FROM time pg_dump ${FROM_DB_HOST:+-h $FROM_DB_HOST} -p $FROM_DB_PORT -U $FROM_DB_USER --clean --if-exists --format=plain --compress=0 $FROM_EXTRA_OPTIONS $FROM_DB_NAME \
+run FROM time pg_dump ${FROM_DB_HOST:+-h $FROM_DB_HOST} ${FROM_DB_PORT:+-p $FROM_DB_PORT} -U $FROM_DB_USER --clean --if-exists --format=plain --compress=0 $FROM_EXTRA_OPTIONS $FROM_DB_NAME \
 	| pv --progress -terabW --size $SIZE \
 	| grep -Pv "^(DROP DATABASE( IF EXISTS)? $FROM_DB_NAME;|(DROP|CREATE) SCHEMA( IF EXISTS)? public;|SET default_tablespace)" \
-	| run TO psql ${TO_DB_HOST:+-h $TO_DB_HOST} -p $TO_DB_PORT -U $TO_DB_USER -nxq -v ON_ERROR_STOP=on --dbname $TO_DB_NAME
+	| run TO psql ${TO_DB_HOST:+-h $TO_DB_HOST} ${TO_DB_PORT:+-p $TO_DB_PORT} -U $TO_DB_USER -nxq -v ON_ERROR_STOP=on --dbname $TO_DB_NAME
 
 # Also reindex, vacuum and analyze new database:
 echo 'Transfer complete. Start reindex:'

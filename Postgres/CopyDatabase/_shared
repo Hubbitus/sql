@@ -28,7 +28,7 @@ function run(){
 	fi
 
 	if [[ -n "${!__var_HOST}" ]]; then
-		printf -v _connect_command '%q ' /usr/bin/ssh -C -o CompressionLevel=9 ${!__var_HOST} "$_sudo_command"
+		printf -v _connect_command '%q ' /usr/bin/ssh -C ${!__var_HOST} "$_sudo_command"
 	else
 		[ __local ] && _connect_command="$_sudo_command" || printf -v _connect_command '%q ' PGPASSWORD="${!__var_DB_PASS}" bash -c "$_sudo_command"
 	fi
