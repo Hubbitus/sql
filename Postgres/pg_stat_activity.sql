@@ -7,9 +7,10 @@
 	,wait_event
 	,wait_event_type
 	,datname, pid
+	,application_name
 	,query
-	,usename, application_name, client_addr, backend_start, xact_start, query_start, state_change
---	,pg_terminate_backend(pid)
+	,usename, client_addr, backend_start, xact_start, query_start, state_change
+--	,pg_terminate_backend(pid) -- KILL ALL! Be carefull
 --	,CASE
 --		WHEN CURRENT_TIMESTAMP - query_start > interval '1 minute'
 --			THEN 'terminate: ' || pg_terminate_backend(pid)
