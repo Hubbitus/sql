@@ -27,7 +27,7 @@ WITH interesting_options AS (
 		,(E'### Write Ahead Log \n  ## Checkpoints \n  http://www.postgresql.org/docs/9.4/static/runtime-config-wal.html')
 --		,('checkpoint_segments'), ('checkpoint_timeout'), ('checkpoint_completion_target'), ('checkpoint_warning')
 -- checkpoint_segments from version 9.5 became min_wal_size and max_wal_size:
---		,('min_wal_size'), ('max_wal_size')
+		,('min_wal_size'), ('max_wal_size')
 		,('checkpoint_completion_target'), ('checkpoint_warning')
 		,(E'### Write Ahead Log \n  ## Archiving - https://www.postgresql.org/docs/9.4/static/runtime-config-wal.html#RUNTIME-CONFIG-WAL-ARCHIVING')
 		,('archive_command'), ('archive_mode')
@@ -37,7 +37,8 @@ WITH interesting_options AS (
 		,('debug_pretty_print'), ('log_checkpoints'), ('log_connections'), ('log_disconnections'), ('log_duration'), ('log_error_verbosity'), ('log_lock_waits'), ('log_statement'), ('log_temp_files')
 		--
 		,(E'### Run-time Statistics \n  ##  Query and Index Statistics Collector - http://www.postgresql.org/docs/9.4/static/runtime-config-statistics.html')
-		,('track_activities'), ('track_counts'), ('track_io_timing'), ('track_functions'), ('track_activity_query_size'), ('update_process_title'), ('stats_temp_directory')
+		,('track_activities'), ('track_counts'), ('track_io_timing'), ('track_functions'), ('track_activity_query_size'), ('update_process_title')
+		,('stats_temp_directory') -- ERROR: must be superuser or a member of pg_read_all_settings to examine "stats_temp_directory"
 		,(E'### Run-time Statistics \n  ##  Statistics Monitoring - http://www.postgresql.org/docs/9.4/static/runtime-config-statistics.html')
 		,('log_parser_stats'), ('log_planner_stats'), ('log_executor_stats'), ('log_statement_stats')
 		--
