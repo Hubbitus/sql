@@ -1,4 +1,4 @@
--- For CURRENT database https://wiki.postgresql.org/wiki/Disk_Usage + my tablespace enhancments
+-- Database sizes https://wiki.postgresql.org/wiki/Disk_Usage + my tablespace enhancments
 SELECT d.datname AS Name,  pg_catalog.pg_get_userbyid(d.datdba) AS Owner,
 	CASE WHEN pg_catalog.has_database_privilege(d.datname, 'CONNECT')
 		THEN pg_catalog.pg_size_pretty(pg_catalog.pg_database_size(d.datname))
@@ -33,6 +33,7 @@ SELECT
 	LIMIT 20
 ;
 
+
 -- My extended variant with tables and indexes sizes:
 -- CREATE TABLE tmp__t1 AS
 WITH rels AS(
@@ -42,7 +43,7 @@ WITH rels AS(
 	FROM information_schema.tables
 	WHERE
 		table_schema NOT IN ('pg_catalog', 'information_schema', 'hint_plan')
-		AND table_type != 'FOREIGN'
+		AND table_type NOT IN ('FOREIGN', 'VIEW')
 ), sizes as (
 	SELECT
 		rels.relation
