@@ -77,7 +77,7 @@ WITH json_pathes_expand AS (
             SELECT DISTINCT one._doc_id$, key, value #>> '{}' as value, type
             FROM _tree
             WHERE key IS NOT NULL
-            ORDER BY key
+--            ORDER BY key
         ) as one_json_pathes ON true
        JOIN LATERAL (
             WITH RECURSIVE _tree (key, value, type) AS (
@@ -99,7 +99,7 @@ WITH json_pathes_expand AS (
             SELECT DISTINCT two._doc_id$, key, value #>> '{}' as value, type
             FROM _tree
             WHERE key IS NOT NULL
-            ORDER BY key
+--            ORDER BY key
         ) as two_json_pathes ON (one_json_pathes._doc_id$ = two_json_pathes._doc_id$ AND one_json_pathes.key = two_json_pathes.key)
     WHERE
         one._head$ AND one._latest$ AND two._head$ AND two._latest$
