@@ -38,7 +38,7 @@ WITH interesting_options AS (
 		--
 		,(E'### Run-time Statistics \n  ##  Query and Index Statistics Collector - http://www.postgresql.org/docs/9.4/static/runtime-config-statistics.html')
 		,('track_activities'), ('track_counts'), ('track_io_timing'), ('track_functions'), ('track_activity_query_size'), ('update_process_title')
-		,('stats_temp_directory') -- ERROR: must be superuser or a member of pg_read_all_settings to examine "stats_temp_directory"
+--		,('stats_temp_directory') -- ERROR: must be superuser or a member of pg_read_all_settings to examine "stats_temp_directory"
 		,(E'### Run-time Statistics \n  ##  Statistics Monitoring - http://www.postgresql.org/docs/9.4/static/runtime-config-statistics.html')
 		,('log_parser_stats'), ('log_planner_stats'), ('log_executor_stats'), ('log_statement_stats')
 		--
@@ -47,7 +47,7 @@ WITH interesting_options AS (
 		,('log_autovacuum_min_duration'), ('autovacuum_naptime'), ('autovacuum_vacuum_threshold'), ('autovacuum_analyze_threshold')
 		--
 		,(E'### Client Connection Defaults - http://www.postgresql.org/docs/9.4/static/runtime-config-client.html')
-		,('statement_timeout'), ('lock_timeout'), ('temp_tablespaces'), ('default_tablespace')
+		,('statement_timeout'), ('lock_timeout'), ('idle_in_transaction_session_timeout'), ('temp_tablespaces'), ('default_tablespace')
 		--
 		,(E'### Preset Options (build or initdb time only) - https://www.postgresql.org/docs/current/static/runtime-config-preset.html')
 		,('block_size'), ('data_checksums'), ('lc_collate'), ('wal_block_size'), ('wal_segment_size')
@@ -81,3 +81,13 @@ ORDER BY o.rn;
 SELECT * FROM pg_file_settings
 
 SELECT current_setting('shared_buffers')
+
+-- Search settings:
+SELECT *
+FROM pg_settings
+WHERE name ILIKE '%timeout%'
+;
+
+
+
+
