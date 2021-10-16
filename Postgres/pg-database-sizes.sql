@@ -39,7 +39,7 @@ SELECT
 WITH rels AS(
 	SELECT
 		table_catalog, table_schema, table_name, table_type
-		,table_catalog || '.' || table_schema || '.' || table_name AS "relation"
+		,format('%I.%I.%I', table_catalog, table_schema, table_name) AS "relation"
 	FROM information_schema.tables
 	WHERE
 		table_schema NOT IN ('pg_catalog', 'information_schema', 'hint_plan')
