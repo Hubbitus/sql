@@ -67,13 +67,13 @@ WITH interesting_options AS (
 		) v (name)
 )
 SELECT
-		o.name
-		,CASE
-				WHEN NOT position('###' IN o.name) > 0
-						THEN current_setting(o.name)
-				ELSE '---------------'
+	o.name
+	,CASE
+		WHEN NOT position('###' IN o.name) > 0
+			THEN current_setting(o.name)
+			ELSE '---------------'
 		END as cur_value_HR
-		,s.setting as cur_value_raw, s.unit, s.min_val, s.max_val, s.boot_val, s.reset_val, s.category, s.enumvals, s.short_desc, s.extra_desc, s.context, s.vartype, s.source, s.sourcefile, s.sourceline
+	,s.setting as cur_value_raw, s.unit, s.min_val, s.max_val, s.boot_val, s.reset_val, s.category, s.enumvals, s.short_desc, s.extra_desc, s.context, s.vartype, s.source, s.sourcefile, s.sourceline
 FROM interesting_options o
 LEFT JOIN pg_settings s ON (s.name = o.name)
 ORDER BY o.rn;
@@ -88,6 +88,11 @@ FROM pg_settings
 WHERE name ILIKE '%timeout%'
 ;
 
-
-
-
+-- Direct get settings values:
+SELECT *
+FROM pg_settings
+WHERE name in (
+	'statement_timeout'
+	,'lock_timeout'
+	,'idle_in_transaction_session_timeout'
+);
