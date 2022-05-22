@@ -63,7 +63,7 @@ WITH interesting_options AS (
 		,('join_collapse_limit')
 		--
 		,(E'### ?? replication settings')
-		,('hot_standby_feedback'), ('max_standby_archive_delay'), ('max_standby_streaming_delay'), ('hot_standby_feedback')
+		,('hot_standby_feedback'), ('max_standby_archive_delay'), ('max_standby_streaming_delay')
 		) v (name)
 )
 SELECT
@@ -96,3 +96,6 @@ WHERE name in (
 	,'lock_timeout'
 	,'idle_in_transaction_session_timeout'
 );
+
+
+
