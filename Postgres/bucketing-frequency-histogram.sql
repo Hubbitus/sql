@@ -3,7 +3,7 @@
 --- https://stackoverflow.com/questions/58844982/generate-date-histogram-over-table/58848954#58848954
 --- https://dbfiddle.uk/?rdbms=postgres_12&fiddle=604ba5261f1524559504e15a649b7edc (<- https://stackoverflow.com/questions/49860696/how-to-bin-timestamp-data-into-buckets-of-n-minutes-in-postgres/49861242#49861242)
 --- My modified variant: https://dbfiddle.uk/?rdbms=postgres_12&fiddle=827faf11fa6ac99f0a56142933404b22
---- And this all scriptin also available at https://dbfiddle.uk/?rdbms=postgres_12&fiddle=c29d7c8df3fa60494b77ce54710092ed
+--- And this all scriptin also available at https://dbfiddle.uk/?rdbms=postgres_12&fiddle=dd8be104651931b564b072543c6e8bed
 
 
 DROP TABLE test1;
