@@ -3,7 +3,7 @@ SELECT
 	,pid
 	,usename
 --	,(SELECT regexp_matches(query, 'SELECT.+?FROM\s+([\w\d.]+)(?:\s|$)', 'gi')) as query_from_naive
-	,epm_ddo_custom.get_query_tables(query) as query_from /* See function in function.get_query_tables.sql*/
+--	,epm_ddo_custom.get_query_tables(query) as query_from /* See function in function.get_query_tables.sql*/
 	,query
 	,to_char(CURRENT_TIMESTAMP - backend_start, 'DD HH24:MI:SS.MS') as client_conn_time
 	,to_char(CURRENT_TIMESTAMP - xact_start,    'DD HH24:MI:SS.MS') as transaction_time
@@ -40,7 +40,7 @@ SELECT *
 FROM   pg_stat_activity
 WHERE  usename = 'Pavel_Alexeev@epam.com';
 
-SELECT pg_terminate_backend(51328)
+SELECT pg_terminate_backend(144519)
 
 SHOW track_activity_query_size
 
@@ -50,6 +50,12 @@ SELECT * FROM pg_stat_progress_vacuum
 ;
 
 
-
+-- Total cache hit ratio (by https://www.citusdata.com/blog/2017/09/29/what-performance-can-you-expect-from-postgres/). Ratio should be closer to 100% as much as possible
+SELECT
+  sum(heap_blks_read) as heap_read,
+  sum(heap_blks_hit)  as heap_hit,
+  sum(heap_blks_hit) / (sum(heap_blks_hit) + sum(heap_blks_read)) as ratio
+FROM
+  pg_statio_user_tables;
 
 
