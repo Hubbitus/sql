@@ -1,10 +1,40 @@
 -- Some examples to work with JSON(B) structures to produce paths and compare objects diff on traverse tree
+-- See also interactive fiddle: https://dbfiddle.uk/?rdbms=postgres_12&fiddle=76a90eebba7e5f4a9e2e61d6204c1b2a 
 
+CREATE table table1 (
+    id serial,
+    txt text,
+    number int,
+    object jsonb
+);
+
+INSERT INTO table1 (txt, number, object) VALUES
+    ('one', 1, '{"name": "name_one", "number": 1, "inner_array": [{"code": "one_one", "number": 11}, {"code": "one_one1", "number": 111}]}'),
+    ('two', 2, '{"name": "name_two", "number": 2, "inner_array": [{"code": "two_one", "number": 22}, {"code": "two_one1", "number": 222}, {"code": "two_one2", "number": 2222}]}'),
+    ('three', 3, '{"name": "name_three", "number": 3, "inner_array": [{"code": "three_one", "three_number": 33}, {"code": "three_one1", "number": 333}]}')
+
+CREATE TABLE table2 AS SELECT * FROM table1
+
+UPDATE table2
+SET
+    txt = 'first test_change'
+WHERE id = 1;
+
+UPDATE table2
+SET
+    txt = 'some_test_change' -- simple scalar field
+    ,number = 77
+    ,object = jsonb_set(
+        object || jsonb '{"name": "name two changed"}' -- Set value inside JSON field
+        ,'{inner_array, 1, code}' -- And even in JSON array on any path!!!
+        ,'"code changed"'
+    )
+WHERE id = 2
 
 -- 1) Most generic variant: Compare any objects structure (tables) allow omit some rows, result in single JSON object and on 1st level of diff (do not nest into JSON fields to see what exact differ)
 WITH data_diff AS (
     SELECT
-        one._doc_id$
+        one.id
         ,(-- Can't create function on prod. Inlining jsonb_diff_val(...)
             SELECT
                 json_object_agg(COALESCE(old.key, new.key), json_build_object('old', old.value, 'new', new.value))
@@ -12,11 +42,11 @@ WITH data_diff AS (
                 FULL OUTER JOIN jsonb_each(row_to_json(one)::jsonb /*val2*/) new ON new.key = old.key
             WHERE
                 new.value IS DISTINCT FROM old.value
-        )::jsonb - '_doc_id$' - '_bt$' - '_tt$' - '_id$' - '_dt$' - '_it$' - '_ccl$' - '_head$' - '_latest$' - '_ctx_id$' - '_otx_id$' - 'entity' -- Fields where we have no interest see differenses (skipped)
+        )::jsonb - 'id' - '_bt$' - '_tt$' - 'id' - '_dt$' - '_it$' - '_ccl$' - '_head$' - '_latest$' - '_ctxid' - '_otxid' - 'entity' -- Fields where we have no interest see differenses (skipped)
         as data_diff
-    FROM cdm_v2.visa one
-        JOIN cdm_development.visa two ON (two._doc_id$ = one._doc_id$) -- Main condition JOIN to obtain pair for comparison (one, two tables may be SQL CTE). Other script part must not be changed in most situations!
-    WHERE one._head$ AND one._latest$ AND two._head$ AND two._latest$
+    FROM table1 one
+        JOIN table2 two ON (two.id = one.id) -- Main condition JOIN to obtain pair for comparison (one, two tables may be SQL CTE). Other script part must not be changed in most situations!
+--Optional other conditions:    WHERE one._head$ AND one._latest$ AND two._head$ AND two._latest$
 )
 SELECT
     *
@@ -25,24 +55,57 @@ WHERE data_diff != '{}'::jsonb
 
 /*
 Results will look like:
-_doc_id$           |data_diff                                                                                                                                                                                                                                                      |
--------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-4060741400041327751|{"country": {"new": {"id": "5", "name": "United States", "type": "Country"}, "old": {"id": "4000602900000005338", "name": "USA", "type": "Country"}}, "_schema_subject$": {"new": "datahub.datafactory.cdm.v2.Visa", "old": "datahub.datafactory.cdm.developmen|
-4060741400046917065|{"country": {"new": {"id": "5", "name": "United States", "type": "Country"}, "old": {"id": "4000602900000005338", "name": "USA", "type": "Country"}}, "_schema_subject$": {"new": "datahub.datafactory.cdm.v2.Visa", "old": "datahub.datafactory.cdm.developmen|
+2   {"txt": {"new": "two", "old": "some_test_change"}, "number": {"new": 2, "old": 77}, "object": {"new": {"name": "name_two", "number": 2, "inner_array": [{"code": "two_one", "number": 22}, {"code": "two_one1", "number": 222}, {"code": "two_one2", "number": 2222}]}, "old": {"name": "name two changed", "number": 2, "inner_array": [{"code": "two_one", "number": 22}, {"code": "code changed", "number": 222}, {"code": "two_one2", "number": 2222}]}}}
 
-data_diff field by structure like:
-  "country": {
+data_diff field formatted:
+{
+  "txt": {
+    "new": "two",
+    "old": "some_test_change"
+  },
+  "number": {
+    "new": 2,
+    "old": 77
+  },
+  "object": {
     "new": {
-      "id": "78",
-      "name": "United Kingdom",
-      "type": "Country"
+      "name": "name_two",
+      "number": 2,
+      "inner_array": [
+        {
+          "code": "two_one",
+          "number": 22
+        },
+        {
+          "code": "two_one1",
+          "number": 222
+        },
+        {
+          "code": "two_one2",
+          "number": 2222
+        }
+      ]
     },
     "old": {
-      "id": "4000602900000005341",
-      "name": "UK",
-      "type": "Country"
+      "name": "name two changed",
+      "number": 2,
+      "inner_array": [
+        {
+          "code": "two_one",
+          "number": 22
+        },
+        {
+          "code": "code changed",
+          "number": 222
+        },
+        {
+          "code": "two_one2",
+          "number": 2222
+        }
+      ]
     }
   }
+}
 */
 
 
@@ -56,10 +119,10 @@ SET
     _ccl$ = 'some_test_change' -- simple scalar field
     ,project_record = jsonb_set(
         project_record || jsonb '{"end_date": 1648684800001}' -- Set value inside JSON field
-        ,'{managers, 1, role_name}' -- And even in JSON array on nay path
+        ,'{managers, 1, role_name}' -- And even in JSON array on any path!!!
         ,'"custom role"'
     )
-WHERE _id$ = 'e14ad16b-9355-45a5-94b6-f10149e471eb'
+WHERE id = 'e14ad16b-9355-45a5-94b6-f10149e471eb'
 */
 
 -- 2) 2nd variant: deep diff JSON objects and show changed JSON-fields in the separate rows 
@@ -67,12 +130,12 @@ WHERE _id$ = 'e14ad16b-9355-45a5-94b6-f10149e471eb'
 -- See my answer there: https://stackoverflow.com/questions/30132568/collect-recursive-json-keys-in-postgres/67761539#67761539
 WITH json_pathes_expand AS (
     SELECT
-        one._doc_id$
+        one.id
         ,one_json_pathes.key   as change_path
         ,one_json_pathes.value as one_value
         ,two_json_pathes.value as two_value
-    FROM cdm_v2.project as one
-        JOIN epm_ddo_custom.tmp__cdm_v2__project as two ON (two._id$ = one._id$)
+    FROM table1 as one
+        JOIN table2 as two ON (two.id = one.id)
         JOIN LATERAL (-- Can't create function on prod. Inlining
             WITH RECURSIVE _tree (key, value, type) AS (
                 SELECT null as key, row_to_json(one)::jsonb as value, null
@@ -90,7 +153,7 @@ WITH json_pathes_expand AS (
                     WHERE typeof = 'array'
                 )
             )
-            SELECT DISTINCT one._doc_id$, key, value #>> '{}' as value, type
+            SELECT DISTINCT one.id, key, value #>> '{}' as value, type
             FROM _tree
             WHERE key IS NOT NULL
 --            ORDER BY key
@@ -112,28 +175,30 @@ WITH json_pathes_expand AS (
                     WHERE typeof = 'array'
                 )
             )
-            SELECT DISTINCT two._doc_id$, key, value #>> '{}' as value, type
+            SELECT DISTINCT two.id, key, value #>> '{}' as value, type
             FROM _tree
             WHERE key IS NOT NULL
 --            ORDER BY key
-        ) as two_json_pathes ON (one_json_pathes._id$ = two_json_pathes._id$ AND one_json_pathes.key = two_json_pathes.key)
+        ) as two_json_pathes ON (one_json_pathes.id = two_json_pathes.id AND one_json_pathes.key = two_json_pathes.key)
     WHERE
-        one._head$ AND one._latest$ AND two._head$ AND two._latest$
-        AND one_json_pathes.key NOT IN ( -- Meta fields where we not interested in diff
-            '._bt$', '._tt$', '._id$', '._dt$', '._it$', '._ccl$', '._ctx_id$', '._otx_id$', '._schema_subject$', '._schema_version$'
+        one_json_pathes.key NOT IN ( -- Meta fields where we not interested in diff
+            '._bt$', '._tt$', '.id', '._dt$', '._it$', '._ccl$', '._ctxid', '._otxid', '._schema_subject$', '._schema_version$'
         )
+        -- Other conditions optional: one._head$ AND one._latest$ AND two._head$ AND two._latest$
 )
 SELECT
     *
 FROM json_pathes_expand jp
 WHERE one_value != two_value
-ORDER BY _doc_id$
+ORDER BY id
 
--- Expected output (obfuscated):
-_doc_id$           |change_path                          |one_value                                                                                                                                                                                                                                                      |two_value                                                                                                                                                                                                                                                      |
--------------------+-------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-8502000000000003823|.project_record                      |{"end_date": 1648684800000, "managers": [{"id": "4060741400308333992", "name": "Name Family", "role_name": "Project Coordinator"}, {"id": "8760000000000227466", "name": "Name Family", "role_name": "Project Coordinator"}, {"id": "4000600100000173118",     |{"end_date": 1648684800001, "managers": [{"id": "4060741400308333992", "name": "Name Familyr", "role_name": "Project Coordinator"}, {"id": "8760000000000227466", "name": "Name Family", "role_name": "custom role"}, {"id": "4000600100000173118", "name":    |
-8502000000000003823|.project_record.end_date             |1648684800000                                                                                                                                                                                                                                                  |1648684800001                                                                                                                                                                                                                                                  |
-8502000000000003823|.project_record.managers             |[{"id": "4060741400308333992", "name": "Name Family", "role_name": "Project Coordinator"}, {"id": "8760000000000227466", "name": "Name Family", "role_name": "Project Coordinator"}, {"id": "4000600100000173118", "name": "Name Family", "role_name": "P      |[{"id": "4060741400308333992", "name": "Name Family", "role_name": "Project Coordinator"}, {"id": "8760000000000227466", "name": "Name Family", "role_name": "custom role"}, {"id": "4000600100000173118", "name": "Name Family", "role_name": "Project S      |
-8502000000000003823|.project_record.managers[1]          |{"id": "8760000000000227466", "name": "Name Family", "role_name": "Project Coordinator"}                                                                                                                                                                       |{"id": "8760000000000227466", "name": "Name Family", "role_name": "custom role"}                                                                                                                                                                               |
-8502000000000003823|.project_record.managers[1].role_name|Project Coordinator                                                                                                                                                                                                                                            |custom role                                                                                                                                                                                                                                                    |
+-- Expected output:
+id|change_path                |one_value                                                                                                                                                       |two_value                                                                                                                                                                   |
+--+---------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+ 2|.number                    |2                                                                                                                                                               |77                                                                                                                                                                          |
+ 2|.object                    |{"name": "name_two", "number": 2, "inner_array": [{"code": "two_one", "number": 22}, {"code": "two_one1", "number": 222}, {"code": "two_one2", "number": 2222}]}|{"name": "name two changed", "number": 2, "inner_array": [{"code": "two_one", "number": 22}, {"code": "code changed", "number": 222}, {"code": "two_one2", "number": 2222}]}|
+ 2|.object.inner_array        |[{"code": "two_one", "number": 22}, {"code": "two_one1", "number": 222}, {"code": "two_one2", "number": 2222}]                                                  |[{"code": "two_one", "number": 22}, {"code": "code changed", "number": 222}, {"code": "two_one2", "number": 2222}]                                                          |
+ 2|.object.inner_array[1]     |{"code": "two_one1", "number": 222}                                                                                                                             |{"code": "code changed", "number": 222}                                                                                                                                     |
+ 2|.object.inner_array[1].code|two_one1                                                                                                                                                        |code changed                                                                                                                                                                |
+ 2|.object.name               |name_two                                                                                                                                                        |name two changed                                                                                                                                                            |
+ 2|.txt                       |two                                                                                                                                                             |some_test_change                                                                                                                                                            |
