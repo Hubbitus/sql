@@ -3,7 +3,7 @@
 * By https://stackoverflow.com/a/44811746/307525 but extended to exceptions handling by truncated queries (when track_activity_query_size set to small value)
 * Example of invocation: SELECT epm_ddo_custom.get_query_tables('SELECT * FROM pg_catalog.pg_class')
 */
-CREATE OR REPLACE FUNCTION epm_ddo_custom.get_query_tables(_query text)
+CREATE OR REPLACE FUNCTION public.tmp_get_query_tables(_query text)
 RETURNS text[]
 LANGUAGE plpgsql AS $$
 DECLARE
