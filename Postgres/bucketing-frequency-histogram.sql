@@ -99,13 +99,12 @@ WITH src AS NOT MATERIALIZED (
     SELECT ARRAY(
         SELECT generate_series(
             MIN(d),
-            MAX(d), 
+            MAX(d),
             '6 months'
         )
         FROM src
     )::date[] as range
-)
-, buckets AS (
+), buckets AS (
     SELECT
         d
         ,width_bucket(d, (SELECT range FROM ranges)) as bucket
