@@ -81,12 +81,11 @@ ORDER BY pg_table_size((t.schemaname || '.' || t.tablename)::regclass) /* AS tab
 
 SELECT 'history.logged_actions_action_idx'::regclass
 
-/
 SELECT pg_table_size('history.logged_actions_action_idx'::regclass)
 
 //////////////////////////////
 
-/
+
 -- Finding Useless Indexes: http://it.toolbox.com/blogs/database-soup/finding-useless-indexes-28796
 -- Modified to use schemaname and do not fail 'relation not found'
 SELECT
@@ -207,18 +206,35 @@ SELECT
 	,pg_stat_get_live_tuples(c.oid) AS LiveTuples
 	,pg_stat_get_dead_tuples(c.oid) AS DeadTuples
 FROM pg_class c
-ORDER BY DeadTuples DESC
-/
+ORDER BY DeadTuples DESC;
 
 SELECT
 	relname AS TableName
 	,n_live_tup AS LiveTuples
 	,n_dead_tup AS DeadTuples
 FROM pg_stat_user_tables
-ORDER BY DeadTuples DESC
-/
-
-SELECT 'bo_cutting_plot'::regclass::oid
-/
+ORDER BY DeadTuples DESC;
 
 SELECT pg_relation_filepath('bo_cutting_plot'::regclass);
+
+
+/**
+* Useless indexes. Candidates to removeal.
+* @See https://www.cybertec-postgresql.com/en/get-rid-of-your-unused-indexes/
+**/
+SELECT s.schemaname,
+       s.relname AS tablename,
+       s.indexrelname AS indexname,
+       pg_relation_size(s.indexrelid) AS index_size
+FROM pg_catalog.pg_stat_user_indexes s
+   JOIN pg_catalog.pg_index i ON s.indexrelid = i.indexrelid
+WHERE s.idx_scan = 0      -- has never been scanned
+  AND 0 <>ALL (i.indkey)  -- no index column is an expression
+  AND NOT i.indisunique   -- is not a UNIQUE index
+  AND NOT EXISTS          -- does not enforce a constraint
+         (SELECT 1 FROM pg_catalog.pg_constraint c
+          WHERE c.conindid = s.indexrelid)
+  AND NOT EXISTS          -- is not an index partition
+         (SELECT 1 FROM pg_catalog.pg_inherits AS inh
+          WHERE inh.inhrelid = s.indexrelid)
+ORDER BY pg_relation_size(s.indexrelid) DESC;
