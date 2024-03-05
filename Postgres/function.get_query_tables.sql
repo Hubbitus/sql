@@ -16,8 +16,8 @@ BEGIN
 	RETURN xpath('//explain:Relation-Name/text()', x_, ARRAY[ARRAY['explain', 'http://www.postgresql.org/2009/explain']])::text[];
 EXCEPTION WHEN OTHERS THEN
 	GET STACKED DIAGNOSTICS
-                err_text_   = MESSAGE_TEXT,
-				err_detail_ = PG_EXCEPTION_DETAIL,
-				err_hint_   = PG_EXCEPTION_HINT;
+		err_text_   = MESSAGE_TEXT,
+		err_detail_ = PG_EXCEPTION_DETAIL,
+		err_hint_   = PG_EXCEPTION_HINT;
 	RETURN ARRAY['ERROR: ' || err_text_, err_detail_, err_hint_];
 END $$;
