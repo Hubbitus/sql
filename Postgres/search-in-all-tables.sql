@@ -33,7 +33,7 @@ WITH xml_counts AS (
 , counts AS(
 	SELECT
 		table_schema, table_name, relation
-	    ,(xpath('/row/cnt/text()', xml_count))[1]::text::int AS row_count
+		,(xpath('/row/cnt/text()', xml_count))[1]::text::int AS row_count
 	FROM xml_counts
 )
 SELECT
