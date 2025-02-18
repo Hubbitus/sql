@@ -17,8 +17,9 @@ SELECT -- 'this_monitoring_query'
 -- FROM clusterAllReplicas(default, system.processes)
 FROM clusterAllReplicas('{cluster}', system.processes) -- See https://clickhouse.com/docs/knowledgebase/useful-queries-for-troubleshooting
 WHERE is_initial_query
+	AND query_id != queryID() -- exclude self
 --	AND 'Insert' = query_kind
-	AND query NOT ILIKE '%this_monitoring_query%'
+--	AND query ILIKE '%alina%' -- Any additional parameters to obtain interesting query
 ORDER BY elapsed DESC
 ;
 
